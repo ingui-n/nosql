@@ -1,0 +1,95 @@
+services:
+  ## Router
+  router-01:
+    image: ${MONGO_IMAGE}
+    container_name: nosql-mongo-router-01
+    restart: always
+    ports:
+      - ${ROUTER_PORT}
+    volumes:
+      - ./scripts:/scripts
+      - ./keyfile:/etc/mongo-keyfile
+      - nosql_mongodb_router_01_db:/data/db
+      - nosql_mongodb_router_01_config:/data/configdb
+    entrypoint: [ '/scripts/entrypoint-router.sh' ]
+    env_file:
+      - .env
+    networks:
+      - ${BRIDGE_NETWORK_NAME}
+
+  ## Config Servers
+  config-svr-01:
+    image: ${MONGO_IMAGE}
+    container_name: nosql-mongo-config-01
+    restart: always
+    volumes:
+      - ./scripts:/scripts
+      - ./keyfile:/etc/mongo-keyfile
+      - nosql_mongodb_config_svr_01_db:/data/db
+      - nosql_mongodb_config_svr_01_config:/data/configdb
+    entrypoint: [ '/scripts/entrypoint-config-server.sh' ]
+    env_file:
+      - .env
+    networks:
+      - ${BRIDGE_NETWORK_NAME}
+
+  ## Shards
+  shard-01-node-01:
+    image: ${MONGO_IMAGE}
+    container_name: nosql-shard-01-node-01
+    restart: always
+    volumes:
+      - ./scripts:/scripts
+      - ./keyfile:/etc/mongo-keyfile
+      - nosql_mongodb_shard_01_node_01_db:/data/db
+      - nosql_mongodb_shard_01_node_01_config:/data/configdb
+    entrypoint: [ '/scripts/entrypoint-shard-01.sh' ]
+    env_file:
+      - .env
+    networks:
+      - ${BRIDGE_NETWORK_NAME}
+
+  shard-01-node-02:
+    image: ${MONGO_IMAGE}
+    container_name: nosql-shard-01-node-02
+    restart: always
+    volumes:
+      - ./scripts:/scripts
+      - ./keyfile:/etc/mongo-keyfile
+      - nosql_mongodb_shard_01_node_02_db:/data/db
+      - nosql_mongodb_shard_01_node_02_config:/data/configdb
+    entrypoint: [ '/scripts/entrypoint-shard-01.sh' ]
+    env_file:
+      - .env
+    networks:
+      - ${BRIDGE_NETWORK_NAME}
+
+  shard-01-node-03:
+    image: ${MONGO_IMAGE}
+    container_name: nosql-shard-01-node-03
+    restart: always
+    volumes:
+      - ./scripts:/scripts
+      - ./keyfile:/etc/mongo-keyfile
+      - nosql_mongodb_shard_01_node_03_db:/data/db
+      - nosql_mongodb_shard_01_node_03_config:/data/configdb
+    entrypoint: [ '/scripts/entrypoint-shard-01.sh' ]
+    env_file:
+      - .env
+    networks:
+      - ${BRIDGE_NETWORK_NAME}
+
+volumes:
+  nosql_mongodb_router_01_db:
+  nosql_mongodb_router_01_config:
+  nosql_mongodb_config_svr_01_db:
+  nosql_mongodb_config_svr_01_config:
+  nosql_mongodb_shard_01_node_01_db:
+  nosql_mongodb_shard_01_node_01_config:
+  nosql_mongodb_shard_01_node_02_db:
+  nosql_mongodb_shard_01_node_02_config:
+  nosql_mongodb_shard_01_node_03_db:
+  nosql_mongodb_shard_01_node_03_config:
+
+networks:
+  ${BRIDGE_NETWORK_NAME}:
