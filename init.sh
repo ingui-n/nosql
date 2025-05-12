@@ -1,4 +1,6 @@
 #!/bin/bash
 
+mkdir -p keyfile
+
 openssl rand -base64 756 > keyfile/keyfile
 chmod 600 keyfile/keyfile
