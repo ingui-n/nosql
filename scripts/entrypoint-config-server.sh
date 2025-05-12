@@ -2,7 +2,7 @@
 set -e
 
 # Start MongoDB in the background
-mongod --shardsvr --replSet "$SHARD_01_NAME" --port 27017 --bind_ip_all --keyFile /etc/mongo-keyfile/keyfile &
+mongod --shardsvr --replSet "$REPLICA_SERVER_CONFIG_NAME" --port 27017 --bind_ip_all --keyFile /etc/mongo-keyfile/keyfile &
 
 # Store the PID of MongoDB
 MONGO_PID=$!
@@ -33,25 +33,21 @@ wait_for_mongo() {
   done
   echo "Local MongoDB is ready!"
 
-  SHARD_UPPERCASED=${SHARD_01_NAME^^}
-  VAR_NAME="${SHARD_UPPERCASED//-/_}_NODES"
-  NODES=${!VAR_NAME}
+  IFS=',' read -ra CONFIG_SERVERS_ARRAY <<< "$CONFIG_SERVERS"
 
-  IFS=',' read -ra NODES_ARRAY <<< "$NODES"
-
-  for NODE in "${NODES_ARRAY[@]}"; do
+  for CONFIG_SERVER in "${CONFIG_SERVERS_ARRAY[@]}"; do
     attempt=0
     max_attempts=30
-    until check_mongo_ready "$NODE" || [ $attempt -ge $max_attempts ]; do
-      echo "Waiting for $NODE to be ready... (attempt $attempt/$max_attempts)"
+    until check_mongo_ready "$CONFIG_SERVER" || [ $attempt -ge $max_attempts ]; do
+      echo "Waiting for $CONFIG_SERVER to be ready... (attempt $attempt/$max_attempts)"
       attempt=$((attempt+1))
       sleep 2
     done
 
     if [ $attempt -ge $max_attempts ]; then
-      echo "Timed out waiting for $NODE. Continuing anyway..."
+      echo "Timed out waiting for $CONFIG_SERVER. Continuing anyway..."
     else
-      echo "$NODE is ready!"
+      echo "$CONFIG_SERVER is ready!"
     fi
   done
 
@@ -67,7 +63,7 @@ init_shard() {
   mongosh --eval "db.adminCommand('ping')" || echo "Failed to ping MongoDB"
 
   # Try to initialize replica set
-  envsubst < config-server-01.js | mongosh || echo "Failed to initialize replica set"
+  envsubst < config-server.js | mongosh || echo "Failed to initialize replica set"
 
   echo "Shard replica set initialization attempted."
 }

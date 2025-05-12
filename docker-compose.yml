@@ -58,7 +58,7 @@ services:
       - ./keyfile:/etc/mongo-keyfile
       - nosql_mongodb_shard_01_node_02_db:/data/db
       - nosql_mongodb_shard_01_node_02_config:/data/configdb
-    entrypoint: [ '/scripts/entrypoint-shard-01.sh' ]
+    entrypoint: [ '/scripts/entrypoint-shard-01-basic.sh' ]
     env_file:
       - .env
     networks:
@@ -73,7 +73,7 @@ services:
       - ./keyfile:/etc/mongo-keyfile
       - nosql_mongodb_shard_01_node_03_db:/data/db
       - nosql_mongodb_shard_01_node_03_config:/data/configdb
-    entrypoint: [ '/scripts/entrypoint-shard-01.sh' ]
+    entrypoint: [ '/scripts/entrypoint-shard-01-basic.sh' ]
     env_file:
       - .env
     networks:

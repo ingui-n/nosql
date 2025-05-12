@@ -1,5 +1,5 @@
-const hosts = "${SHARDS}".split(",");
-const replica = "${REPLICA_SERVER_SHARD_01_NAME}";
+const hosts = "${CONFIG_SERVERS}".split(",");
+const replica = "${REPLICA_SERVER_CONFIG_NAME}";
 
 const members = hosts.map((host, index) => ({
   _id: index,

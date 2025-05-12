@@ -2,7 +2,7 @@
 set -e
 
 # Start MongoDB in the background
-mongod --shardsvr --replSet "$SHARD_01_NAME" --port 27017 --bind_ip_all --keyFile /etc/mongo-keyfile/keyfile &
+mongod --shardsvr --replSet "$REPLICA_SERVER_SHARD_01_NAME" --port 27017 --bind_ip_all --keyFile /etc/mongo-keyfile/keyfile &
 
 # Store the PID of MongoDB
 MONGO_PID=$!
@@ -33,11 +33,7 @@ wait_for_mongo() {
   done
   echo "Local MongoDB is ready!"
 
-  SHARD_UPPERCASED=${SHARD_01_NAME^^}
-  VAR_NAME="${SHARD_UPPERCASED//-/_}_NODES"
-  NODES=${!VAR_NAME}
-
-  IFS=',' read -ra NODES_ARRAY <<< "$NODES"
+  IFS=',' read -ra NODES_ARRAY <<< "$CONFIG_SVR_01_NODES"
 
   for NODE in "${NODES_ARRAY[@]}"; do
     attempt=0
@@ -67,7 +63,7 @@ init_shard() {
   mongosh --eval "db.adminCommand('ping')" || echo "Failed to ping MongoDB"
 
   # Try to initialize replica set
-  envsubst < config-server-01.js | mongosh || echo "Failed to initialize replica set"
+  envsubst < config-shard-01.js | mongosh || echo "Failed to initialize replica set"
 
   echo "Shard replica set initialization attempted."
 }

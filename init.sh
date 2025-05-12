@@ -1,8 +1,4 @@
 #!/bin/bash
-#set -e
 
-set -a
-source .env
-set +a
-
-envsubst < scripts/config-server-01.js | node
+openssl rand -base64 756 > keyfile/keyfile
+chmod 600 keyfile/keyfile
