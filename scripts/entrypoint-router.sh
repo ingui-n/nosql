@@ -9,6 +9,7 @@ done
 
 # Wait for each shard's replica set to elect a primary
 IFS=',' read -ra SHARD_ARRAY <<< "$CONFIG_SERVERS"
+shard_iteration=0
 
 # Loop through each shard
 for SHARD in "${SHARD_ARRAY[@]}"; do
@@ -16,10 +17,15 @@ for SHARD in "${SHARD_ARRAY[@]}"; do
   VAR_NAME="${SHARD_UPPERCASED//-/_}_NODES"
   NODES=${!VAR_NAME}
 
+  rs_index=$(printf "%02d" "$shard_iteration")
+  replica_var="REPLICA_SERVER_SHARD_${rs_index}_NAME"
+  replica_name=${!replica_var}
+
   echo "Waiting for $SHARD to elect a PRIMARY..."
-  until mongosh --host "$SHARD/${NODES//,/:27017,}:27017" --eval 'rs.status().members.some(m => m.stateStr === "PRIMARY")' | grep -q 'true'; do
+  until mongosh --host "$replica_name/${NODES//,/:27017,}:27017" --eval 'rs.status().members.some(m => m.stateStr === "PRIMARY")' | grep -q 'true'; do
     sleep 5
   done
+  ((shard_iteration++))
 done
 
 # Start mongos in the background

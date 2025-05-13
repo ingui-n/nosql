@@ -2,7 +2,6 @@ services:
   ## Router
   router-01:
     image: ${MONGO_IMAGE}
-    container_name: nosql-mongo-router-01
     restart: always
     ports:
       - ${ROUTER_PORT}
@@ -15,28 +14,26 @@ services:
     env_file:
       - .env
     networks:
-      - ${BRIDGE_NETWORK_NAME}
+      - bridge_network
 
   ## Config Servers
   config-svr-01:
     image: ${MONGO_IMAGE}
-    container_name: nosql-mongo-config-01
     restart: always
     volumes:
       - ./scripts:/scripts
       - ./keyfile:/etc/mongo-keyfile
       - nosql_mongodb_config_svr_01_db:/data/db
       - nosql_mongodb_config_svr_01_config:/data/configdb
-    entrypoint: [ '/scripts/entrypoint-config-server.sh' ]
+    entrypoint: [ '/scripts/entrypoint-server.sh' ]
     env_file:
       - .env
     networks:
-      - ${BRIDGE_NETWORK_NAME}
+      - bridge_network
 
   ## Shards
   shard-01-node-01:
     image: ${MONGO_IMAGE}
-    container_name: nosql-shard-01-node-01
     restart: always
     volumes:
       - ./scripts:/scripts
@@ -47,11 +44,10 @@ services:
     env_file:
       - .env
     networks:
-      - ${BRIDGE_NETWORK_NAME}
+      - bridge_network
 
   shard-01-node-02:
     image: ${MONGO_IMAGE}
-    container_name: nosql-shard-01-node-02
     restart: always
     volumes:
       - ./scripts:/scripts
@@ -62,11 +58,10 @@ services:
     env_file:
       - .env
     networks:
-      - ${BRIDGE_NETWORK_NAME}
+      - bridge_network
 
   shard-01-node-03:
     image: ${MONGO_IMAGE}
-    container_name: nosql-shard-01-node-03
     restart: always
     volumes:
       - ./scripts:/scripts
@@ -77,7 +72,7 @@ services:
     env_file:
       - .env
     networks:
-      - ${BRIDGE_NETWORK_NAME}
+      - bridge_network
 
 volumes:
   nosql_mongodb_router_01_db:
@@ -92,4 +87,6 @@ volumes:
   nosql_mongodb_shard_01_node_03_config:
 
 networks:
-  ${BRIDGE_NETWORK_NAME}:
+  bridge_network:
+    driver: bridge
+    name: ${BRIDGE_NETWORK_NAME}

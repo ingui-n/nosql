@@ -7,6 +7,8 @@ const members = hosts.map((host, index) => ({
   priority: index === 0 ? 1 : 0.5
 }));
 
+disableTelemetry();
+
 rs.initiate({
   _id: replica,
   configsvr: true,
