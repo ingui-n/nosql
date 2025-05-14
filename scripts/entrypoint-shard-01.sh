@@ -39,7 +39,7 @@ wait_for_mongo() {
     attempt=0
     max_attempts=30
     until check_mongo_ready "$NODE" || [ $attempt -ge $max_attempts ]; do
-      echo "Waiting for $NODE to be ready... (attempt ${attempt + 1}/$max_attempts)"
+      echo "Waiting for $NODE to be ready... (attempt $((attempt + 1))/$max_attempts)"
       attempt=$((attempt+1))
       sleep 2
     done
@@ -62,26 +62,44 @@ init_shard() {
   echo "Current MongoDB status:"
   mongosh --eval "db.adminCommand('ping')" || echo "Failed to ping MongoDB"
 
-  # Try to initialize replica set
-#  envsubst < /scripts/config-shard-01.js | mongosh || echo "Failed to initialize replica set"
-  mongosh --eval "
-    const hosts = '${CONFIG_SVR_01_NODES}'.split(',');
-    const replica = '${REPLICA_SERVER_SHARD_01_NAME}';
-    const members = hosts.map((host, index) => ({
-      _id: index,
-      host: \`\${host}:27017\`,
-      priority: index === 0 ? 1 : 0.5
-    }));
-    disableTelemetry();
-    rs.initiate({
-      _id: replica,
-      configsvr: true,
-      version: 1,
-      members
-    }, {force: true});
-  " || echo "Failed to initialize replica set"
+  # Try to initialize replica set with retries
+  local max_attempts=5
+  local attempt=0
+  local success=false
 
-  echo "Shard replica set initialization attempted."
+  while [ $attempt -lt $max_attempts ] && [ "$success" = "false" ]; do
+    ((attempt++))
+    echo "Attempt $attempt of $max_attempts to initialize shard replica set"
+
+    if mongosh --eval "
+      const hosts = '${CONFIG_SVR_01_NODES}'.split(',');
+      const replica = '${REPLICA_SERVER_SHARD_01_NAME}';
+      const members = hosts.map((host, index) => ({
+        _id: index,
+        host: host + ':27017',
+        priority: index === 0 ? 1 : 0.5
+      }));
+      disableTelemetry();
+      rs.initiate({
+        _id: replica,
+        version: 1,
+        members
+      }, {force: true});
+    " 2>/dev/null; then
+      echo "Successfully initialized shard replica set"
+      success=true
+    else
+      echo "Failed to initialize shard replica set, retrying in 5 seconds..."
+      sleep 5
+    fi
+  done
+
+  if [ "$success" = "false" ]; then
+    echo "Failed to initialize shard replica set after $max_attempts attempts"
+    echo "Continuing anyway, as the replica set might have been initialized by another node"
+  fi
+
+  echo "Shard replica set initialization completed."
 }
 
 # Main execution

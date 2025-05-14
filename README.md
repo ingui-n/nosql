@@ -11,7 +11,7 @@ MongoDB cluster with key file authentification.
 Run `init.sh` to initialize key file authentification
 
 ```shell
-chmod +x init.sh && ./init.sh
+chmod +x init.sh && sudo ./init.sh
 ```
 
 ## Run

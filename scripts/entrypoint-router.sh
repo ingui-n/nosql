@@ -8,20 +8,23 @@ until mongosh --host "${REPLICA_SERVER_CONFIG_NAME}"/"${CONFIG_SERVERS//,/:27017
 done
 
 # Wait for each shard's replica set to elect a primary
-IFS=',' read -ra SHARD_ARRAY <<< "$CONFIG_SERVERS"
+IFS=',' read -ra SHARD_ARRAY <<< "$REPLICA_SERVER_NAMES"
 shard_iteration=0
 
 # Loop through each shard
-for SHARD in "${SHARD_ARRAY[@]}"; do
-  SHARD_UPPERCASED=${SHARD^^}
-  VAR_NAME="${SHARD_UPPERCASED//-/_}_NODES"
-  NODES=${!VAR_NAME}
+for SHARD_NAME in "${SHARD_ARRAY[@]}"; do
+  # Extract the shard number from the replica set name (e.g., "rs-shard-01" -> "01")
+  SHARD_NUM=${SHARD_NAME##*-}
+
+  # Construct the variable name for the shard nodes
+  SHARD_VAR="CONFIG_SVR_${SHARD_NUM}_NODES"
+  NODES=${!SHARD_VAR}
 
   rs_index=$(printf "%02d" "$shard_iteration")
   replica_var="REPLICA_SERVER_SHARD_${rs_index}_NAME"
   replica_name=${!replica_var}
 
-  echo "Waiting for $SHARD to elect a PRIMARY..."
+  echo "Waiting for $SHARD_NAME to elect a PRIMARY..."
   until mongosh --host "$replica_name/${NODES//,/:27017,}:27017" --eval 'rs.status().members.some(m => m.stateStr === "PRIMARY")' | grep -q 'true'; do
     sleep 5
   done
@@ -42,10 +45,13 @@ done
 echo "Adding shards..."
 shard_iteration=0
 
-for SHARD in "${SHARD_ARRAY[@]}"; do
-  SHARD_UPPERCASED=${SHARD^^}
-  VAR_NAME="${SHARD_UPPERCASED//-/_}_NODES"
-  NODES=${!VAR_NAME}
+for SHARD_NAME in "${SHARD_ARRAY[@]}"; do
+  # Extract the shard number from the replica set name (e.g., "rs-shard-01" -> "01")
+  SHARD_NUM=${SHARD_NAME##*-}
+
+  # Construct the variable name for the shard nodes
+  SHARD_VAR="CONFIG_SVR_${SHARD_NUM}_NODES"
+  NODES=${!SHARD_VAR}
 
   rs_index=$(printf "%02d" "$shard_iteration")
   replica_var="REPLICA_SERVER_SHARD_${rs_index}_NAME"

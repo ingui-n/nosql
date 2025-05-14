@@ -2,6 +2,7 @@ services:
   ## Router
   router-01:
     image: ${MONGO_IMAGE}
+#    container_name: nosql-mongo-router-01
     restart: always
     ports:
       - ${ROUTER_PORT}
@@ -19,6 +20,7 @@ services:
   ## Config Servers
   config-svr-01:
     image: ${MONGO_IMAGE}
+#    container_name: nosql-mongo-config-01
     restart: always
     volumes:
       - ./scripts:/scripts
@@ -34,6 +36,7 @@ services:
   ## Shards
   shard-01-node-01:
     image: ${MONGO_IMAGE}
+#    container_name: nosql-shard-01-node-01
     restart: always
     volumes:
       - ./scripts:/scripts
@@ -48,6 +51,7 @@ services:
 
   shard-01-node-02:
     image: ${MONGO_IMAGE}
+#    container_name: nosql-shard-01-node-02
     restart: always
     volumes:
       - ./scripts:/scripts
@@ -62,6 +66,7 @@ services:
 
   shard-01-node-03:
     image: ${MONGO_IMAGE}
+#    container_name: nosql-shard-01-node-03
     restart: always
     volumes:
       - ./scripts:/scripts
