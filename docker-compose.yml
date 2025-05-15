@@ -1,95 +1,230 @@
 services:
-  ## Router
-  router-01:
+  ## Routers
+  nosql-router-01:
     image: ${MONGO_IMAGE}
-#    container_name: nosql-mongo-router-01
+    container_name: nosql-router-01
     restart: always
     ports:
-      - ${ROUTER_PORT}
+      - ${ROUTER_01_PORT}
     volumes:
       - ./scripts:/scripts
       - ./keyfile:/etc/mongo-keyfile
       - nosql_mongodb_router_01_db:/data/db
       - nosql_mongodb_router_01_config:/data/configdb
-    entrypoint: [ '/scripts/entrypoint-router.sh' ]
-    env_file:
-      - .env
+    command: mongos --configdb rs-config-server/nosql-config-01:27017,nosql-config-02:27017,nosql-config-03:27017 --port 27017 --bind_ip_all --keyFile /etc/mongo-keyfile/keyfile
+    env_file: .env
+    networks:
+      - bridge_network
+
+  nosql-router-02:
+    image: ${MONGO_IMAGE}
+    container_name: nosql-router-02
+    restart: always
+    ports:
+      - ${ROUTER_02_PORT}
+    volumes:
+      - ./scripts:/scripts
+      - ./keyfile:/etc/mongo-keyfile
+      - nosql_mongodb_router_02_db:/data/db
+      - nosql_mongodb_router_02_config:/data/configdb
+    command: mongos --configdb rs-config-server/nosql-config-01:27017,nosql-config-02:27017,nosql-config-03:27017 --port 27017 --bind_ip_all --keyFile /etc/mongo-keyfile/keyfile
+    env_file: .env
     networks:
       - bridge_network
 
   ## Config Servers
-  config-svr-01:
+  nosql-config-01:
     image: ${MONGO_IMAGE}
-#    container_name: nosql-mongo-config-01
+    container_name: nosql-config-01
     restart: always
     volumes:
       - ./scripts:/scripts
       - ./keyfile:/etc/mongo-keyfile
       - nosql_mongodb_config_svr_01_db:/data/db
       - nosql_mongodb_config_svr_01_config:/data/configdb
-    entrypoint: [ '/scripts/entrypoint-server.sh' ]
-    env_file:
-      - .env
+    command: mongod --configsvr --replSet rs-config-server --port 27017 --bind_ip_all --keyFile /etc/mongo-keyfile/keyfile
+    env_file: .env
     networks:
       - bridge_network
 
-  ## Shards
-  shard-01-node-01:
+  nosql-config-02:
     image: ${MONGO_IMAGE}
-#    container_name: nosql-shard-01-node-01
+    container_name: nosql-config-02
+    restart: always
+    volumes:
+      - ./scripts:/scripts
+      - ./keyfile:/etc/mongo-keyfile
+      - nosql_mongodb_config_svr_02_db:/data/db
+      - nosql_mongodb_config_svr_02_config:/data/configdb
+    command: mongod --configsvr --replSet rs-config-server --port 27017 --bind_ip_all --keyFile /etc/mongo-keyfile/keyfile
+    networks:
+      - bridge_network
+
+  nosql-config-03:
+    image: ${MONGO_IMAGE}
+    container_name: nosql-config-03
+    restart: always
+    volumes:
+      - ./scripts:/scripts
+      - ./keyfile:/etc/mongo-keyfile
+      - nosql_mongodb_config_svr_03_db:/data/db
+      - nosql_mongodb_config_svr_03_config:/data/configdb
+    command: mongod --configsvr --replSet rs-config-server --port 27017 --bind_ip_all --keyFile /etc/mongo-keyfile/keyfile
+    networks:
+      - bridge_network
+
+  ## Shard 1
+  nosql-shard-01-node-01:
+    image: ${MONGO_IMAGE}
+    container_name: nosql-shard-01-node-01
     restart: always
     volumes:
       - ./scripts:/scripts
       - ./keyfile:/etc/mongo-keyfile
       - nosql_mongodb_shard_01_node_01_db:/data/db
       - nosql_mongodb_shard_01_node_01_config:/data/configdb
-    entrypoint: [ '/scripts/entrypoint-shard-01.sh' ]
-    env_file:
-      - .env
+    command: mongod --shardsvr --replSet rs-shard-01 --port 27017 --keyFile /etc/mongo-keyfile/keyfile
+    env_file: .env
     networks:
       - bridge_network
 
-  shard-01-node-02:
+  nosql-shard-01-node-02:
     image: ${MONGO_IMAGE}
-#    container_name: nosql-shard-01-node-02
+    container_name: nosql-shard-01-node-02
     restart: always
     volumes:
       - ./scripts:/scripts
       - ./keyfile:/etc/mongo-keyfile
       - nosql_mongodb_shard_01_node_02_db:/data/db
       - nosql_mongodb_shard_01_node_02_config:/data/configdb
-    entrypoint: [ '/scripts/entrypoint-shard-01-basic.sh' ]
-    env_file:
-      - .env
+    command: mongod --shardsvr --replSet rs-shard-01 --port 27017 --keyFile /etc/mongo-keyfile/keyfile
     networks:
       - bridge_network
 
-  shard-01-node-03:
+  nosql-shard-01-node-03:
     image: ${MONGO_IMAGE}
-#    container_name: nosql-shard-01-node-03
+    container_name: nosql-shard-01-node-03
     restart: always
     volumes:
       - ./scripts:/scripts
       - ./keyfile:/etc/mongo-keyfile
       - nosql_mongodb_shard_01_node_03_db:/data/db
       - nosql_mongodb_shard_01_node_03_config:/data/configdb
-    entrypoint: [ '/scripts/entrypoint-shard-01-basic.sh' ]
-    env_file:
-      - .env
+    command: mongod --shardsvr --replSet rs-shard-01 --port 27017 --keyFile /etc/mongo-keyfile/keyfile
+    networks:
+      - bridge_network
+
+  ## Shard 2
+  nosql-shard-02-node-01:
+    image: ${MONGO_IMAGE}
+    container_name: nosql-shard-02-node-01
+    restart: always
+    volumes:
+      - ./scripts:/scripts
+      - ./keyfile:/etc/mongo-keyfile
+      - nosql_mongodb_shard_02_node_01_db:/data/db
+      - nosql_mongodb_shard_02_node_01_config:/data/configdb
+    command: mongod --shardsvr --replSet rs-shard-02 --port 27017 --keyFile /etc/mongo-keyfile/keyfile
+    env_file: .env
+    networks:
+      - bridge_network
+
+  nosql-shard-02-node-02:
+    image: ${MONGO_IMAGE}
+    container_name: nosql-shard-02-node-02
+    restart: always
+    volumes:
+      - ./scripts:/scripts
+      - ./keyfile:/etc/mongo-keyfile
+      - nosql_mongodb_shard_02_node_02_db:/data/db
+      - nosql_mongodb_shard_02_node_02_config:/data/configdb
+    command: mongod --shardsvr --replSet rs-shard-02 --port 27017 --keyFile /etc/mongo-keyfile/keyfile
+    networks:
+      - bridge_network
+
+  nosql-shard-02-node-03:
+    image: ${MONGO_IMAGE}
+    container_name: nosql-shard-02-node-03
+    restart: always
+    volumes:
+      - ./scripts:/scripts
+      - ./keyfile:/etc/mongo-keyfile
+      - nosql_mongodb_shard_02_node_03_db:/data/db
+      - nosql_mongodb_shard_02_node_03_config:/data/configdb
+    command: mongod --shardsvr --replSet rs-shard-02 --port 27017 --keyFile /etc/mongo-keyfile/keyfile
+    networks:
+      - bridge_network
+
+  ## Shard 3
+  nosql-shard-03-node-01:
+    image: ${MONGO_IMAGE}
+    container_name: nosql-shard-03-node-01
+    restart: always
+    volumes:
+      - ./scripts:/scripts
+      - ./keyfile:/etc/mongo-keyfile
+      - nosql_mongodb_shard_03_node_01_db:/data/db
+      - nosql_mongodb_shard_03_node_01_config:/data/configdb
+    command: mongod --shardsvr --replSet rs-shard-03 --port 27017 --keyFile /etc/mongo-keyfile/keyfile
+    env_file: .env
+    networks:
+      - bridge_network
+
+  nosql-shard-03-node-02:
+    image: ${MONGO_IMAGE}
+    container_name: nosql-shard-03-node-02
+    restart: always
+    volumes:
+      - ./scripts:/scripts
+      - ./keyfile:/etc/mongo-keyfile
+      - nosql_mongodb_shard_03_node_02_db:/data/db
+      - nosql_mongodb_shard_03_node_02_config:/data/configdb
+    command: mongod --shardsvr --replSet rs-shard-03 --port 27017 --keyFile /etc/mongo-keyfile/keyfile
+    networks:
+      - bridge_network
+
+  nosql-shard-03-node-03:
+    image: ${MONGO_IMAGE}
+    container_name: nosql-shard-03-node-03
+    restart: always
+    volumes:
+      - ./scripts:/scripts
+      - ./keyfile:/etc/mongo-keyfile
+      - nosql_mongodb_shard_03_node_03_db:/data/db
+      - nosql_mongodb_shard_03_node_03_config:/data/configdb
+    command: mongod --shardsvr --replSet rs-shard-03 --port 27017 --keyFile /etc/mongo-keyfile/keyfile
     networks:
       - bridge_network
 
 volumes:
   nosql_mongodb_router_01_db:
   nosql_mongodb_router_01_config:
+  nosql_mongodb_router_02_db:
+  nosql_mongodb_router_02_config:
   nosql_mongodb_config_svr_01_db:
   nosql_mongodb_config_svr_01_config:
+  nosql_mongodb_config_svr_02_db:
+  nosql_mongodb_config_svr_02_config:
+  nosql_mongodb_config_svr_03_db:
+  nosql_mongodb_config_svr_03_config:
   nosql_mongodb_shard_01_node_01_db:
   nosql_mongodb_shard_01_node_01_config:
   nosql_mongodb_shard_01_node_02_db:
   nosql_mongodb_shard_01_node_02_config:
   nosql_mongodb_shard_01_node_03_db:
   nosql_mongodb_shard_01_node_03_config:
+  nosql_mongodb_shard_02_node_01_db:
+  nosql_mongodb_shard_02_node_01_config:
+  nosql_mongodb_shard_02_node_02_db:
+  nosql_mongodb_shard_02_node_02_config:
+  nosql_mongodb_shard_02_node_03_db:
+  nosql_mongodb_shard_02_node_03_config:
+  nosql_mongodb_shard_03_node_01_db:
+  nosql_mongodb_shard_03_node_01_config:
+  nosql_mongodb_shard_03_node_02_db:
+  nosql_mongodb_shard_03_node_02_config:
+  nosql_mongodb_shard_03_node_03_db:
+  nosql_mongodb_shard_03_node_03_config:
 
 networks:
   bridge_network:
