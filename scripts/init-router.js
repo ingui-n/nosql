@@ -33,7 +33,8 @@ db.createCollection("departures", {
         stateId: {bsonType: "int"},
         typeId: {bsonType: "int"},
         subTypeId: {bsonType: "int"},
-        description: {bsonType: ["string", "null"]}
+        description: {bsonType: ["string", "null"]},
+        region_url: {bsonType: ["string", "null"]}
       }
     }
   },
