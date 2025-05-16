@@ -21,3 +21,7 @@ To run the mongo cluster, run this command
 ```shell
 docker-compose up -d
 ```
+
+## Notes
+
+Departures across all the regions are `185 452` and counting. (16-5-2025)
