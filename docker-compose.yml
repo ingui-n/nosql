@@ -5,7 +5,7 @@ services:
     container_name: nosql-router-01
     restart: always
     ports:
-      - ${ROUTER_01_PORT}
+      - ${ROUTER_01_PORT}:27017
     volumes:
       - ./scripts:/scripts
       - ./keyfile:/etc/mongo-keyfile
@@ -21,7 +21,7 @@ services:
     container_name: nosql-router-02
     restart: always
     ports:
-      - ${ROUTER_02_PORT}
+      - ${ROUTER_02_PORT}:27017
     volumes:
       - ./scripts:/scripts
       - ./keyfile:/etc/mongo-keyfile
@@ -42,7 +42,7 @@ services:
       - ./keyfile:/etc/mongo-keyfile
       - nosql_mongodb_config_svr_01_db:/data/db
       - nosql_mongodb_config_svr_01_config:/data/configdb
-    command: mongod --configsvr --replSet rs-config-server --port 27017 --bind_ip_all --keyFile /etc/mongo-keyfile/keyfile
+    command: mongod --configsvr --replSet rs-config-server --port 27017 --keyFile /etc/mongo-keyfile/keyfile
     env_file: .env
     networks:
       - bridge_network
@@ -56,7 +56,7 @@ services:
       - ./keyfile:/etc/mongo-keyfile
       - nosql_mongodb_config_svr_02_db:/data/db
       - nosql_mongodb_config_svr_02_config:/data/configdb
-    command: mongod --configsvr --replSet rs-config-server --port 27017 --bind_ip_all --keyFile /etc/mongo-keyfile/keyfile
+    command: mongod --configsvr --replSet rs-config-server --port 27017 --keyFile /etc/mongo-keyfile/keyfile
     networks:
       - bridge_network
 
@@ -69,7 +69,7 @@ services:
       - ./keyfile:/etc/mongo-keyfile
       - nosql_mongodb_config_svr_03_db:/data/db
       - nosql_mongodb_config_svr_03_config:/data/configdb
-    command: mongod --configsvr --replSet rs-config-server --port 27017 --bind_ip_all --keyFile /etc/mongo-keyfile/keyfile
+    command: mongod --configsvr --replSet rs-config-server --port 27017 --keyFile /etc/mongo-keyfile/keyfile
     networks:
       - bridge_network
 

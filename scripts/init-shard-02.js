@@ -35,16 +35,34 @@ try {
 }
 
 try {
-  const user = process.env.MONGO_INITDB_ROOT_USERNAME;
-  const pwd = process.env.MONGO_INITDB_ROOT_PASSWORD;
+  const user = process.env.ROOT_USERNAME;
+  const pwd = process.env.ROOT_PASSWORD;
 
   if (!user || !pwd) {
     throw new Error('Missing credentials');
   }
 
-  console.log('init-shard-02:', 'Creating admin user');
-  db.getSiblingDB('admin').createUser({user, pwd, roles: [{role: 'root', db: 'admin'}]});
-  console.log('init-shard-02:', 'Successfully created admin user');
+  console.log('init-shard-02:', 'Creating admin user...');
+
+  new Promise((resolve, reject) => {
+    const attempt = () => {
+      if (db.isMaster().ismaster) {
+        try {
+          db.getSiblingDB('admin').createUser({user, pwd, roles: [{role: 'root', db: 'admin'}]});
+          console.log('init-shard-02:', 'Successfully created admin user');
+          resolve('Admin user created successfully');
+        } catch (e) {
+          console.error('init-shard-02:', 'Error creating admin user:', e.message);
+          reject(e);
+        }
+      } else {
+        console.log('init-shard-02:', 'Waiting for config server to be ready (3s)...');
+        setTimeout(attempt, 3000);
+      }
+    };
+
+    attempt();
+  }).catch();
 } catch (e) {
-  console.error('init-shard-02:', 'Error when creating admin credentials', e.message);
+  console.error('init-shard-02:', 'Error when creating admin credentials:', e.message);
 }

@@ -22,6 +22,12 @@ To run the mongo cluster, run this command
 docker-compose up -d
 ```
 
+## Setup cluster
+
+```shell
+chmod +x setup-cluster.sh && sudo ./setup-cluster.sh
+```
+
 ## Notes
 
 Departures across all the regions are `185 452` and counting. (16-5-2025)
