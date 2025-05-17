@@ -29,7 +29,6 @@ db.createCollection("departures", {
       properties: {
         departure_id: {bsonType: "int"},
         reportedDateTime: {bsonType: "date"},
-        startDateTime: {bsonType: ["date", "null"]},
         stateId: {bsonType: "int"},
         typeId: {bsonType: "int"},
         subTypeId: {bsonType: "int"},

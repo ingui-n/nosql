@@ -2,9 +2,8 @@ import urllib.request
 import json
 import os
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import ssl
-from pymongo import MongoClient
 from dotenv import load_dotenv
 
 
@@ -50,7 +49,7 @@ def fetch_region(region):
         future_dt = date_time + timedelta(days=182.5)
         fetch_and_merge(
             region['url'] + api_params + f'&casOd={date_time.isoformat()}&casDo={future_dt.isoformat()}',
-            region['raw_file_path'],
+            os.path.join(pwd, region['raw_file_path']),
             True
         )
         date_time = future_dt
@@ -75,8 +74,8 @@ def fetch_units(region):
             return (departure['id'], [])
 
     try:
-        if os.path.exists(region['raw_file_path']):
-            with open(region['raw_file_path'], 'r', encoding='utf-8') as fr:
+        if os.path.exists(os.path.join(pwd, region['raw_file_path'])):
+            with open(os.path.join(pwd, region['raw_file_path']), 'r', encoding='utf-8') as fr:
                 try:
                     departures_data = json.load(fr)
                 except json.JSONDecodeError:
@@ -117,7 +116,7 @@ def fetch_units(region):
                 except Exception as e:
                     print(f"Error processing departure at index {idx}: {e}")
 
-        with open(region['raw_file_path'], 'w', encoding='utf-8') as fw:
+        with open(os.path.join(pwd, region['raw_file_path']), 'w', encoding='utf-8') as fw:
             json.dump(departures_data, fw, indent=2, ensure_ascii=False)
             return departures_data
 
@@ -143,8 +142,7 @@ def remove_file(file_path):
 def format_departure_data(departure, region):
     departure_data = {
         "departure_id": departure["id"],
-        "reportedDateTime": datetime.fromisoformat(departure["casOhlaseni"].replace('Z', '+00:00')),
-        "startDateTime": departure["casVzniku"],
+        "reportedDateTime": {"$date": departure["casOhlaseni"]},
         "stateId": departure["stavId"],
         "typeId": departure["typId"],
         "subTypeId": departure["podtypId"],
@@ -169,7 +167,7 @@ def format_departure_data(departure, region):
         "gis1": departure["gis1"],
         "gis2": departure["gis2"],
         "preplanned": departure["zoc"],
-        "road": departure["silnice"]
+        "road": departure.get("silnice")
     }
 
     sent_units_data = [{
@@ -178,34 +176,19 @@ def format_departure_data(departure, region):
         "unit": unit["jednotka"],
         "count": unit["pocet"],
         "currentCount": unit["aktualniPocet"],
-        "callDateTime": unit["casOhlaseni"]
+        "callDateTime": {
+            "$date": datetime.strptime(unit["casOhlaseni"], '%d.%m.%Y %H:%M').replace(tzinfo=timezone.utc)
+            .isoformat().replace('+00:00', 'Z')
+        }
+        if unit.get("casOhlaseni") and unit.get("casOhlaseni") != "Invalid date" else None
     } for unit in departure['sent_units']]
 
     return departure_data, address_data, sent_units_data
 
 
-def store_in_mongodb(departure_data, address_data, sent_units_data):
-    client = MongoClient(mongo_url)
-    db = client['fire_departures_db']
-
-    departures_collection = db['departures']
-    addresses_collection = db['addresses']
-    sent_units_collection = db['sent_units']
-
-    # Check if departure already exists
-    if not departures_collection.find_one({"departure_id": departure_data["departure_id"]}):
-        departures_collection.insert_one(departure_data)
-        addresses_collection.insert_one(address_data)
-        if len(sent_units_data) > 0:
-            sent_units_collection.insert_many(sent_units_data)
-        print(f"Inserted departure {departure_data['departure_id']}")
-    else:
-        print(f"Departure {departure_data['departure_id']} already exists")
-
-
 def process_departures(region):
-    if os.path.exists(region['raw_file_path']):
-        with open(region['raw_file_path'], 'r', encoding='utf-8') as fr:
+    if os.path.exists(os.path.join(pwd, region['raw_file_path'])):
+        with open(os.path.join(pwd, region['raw_file_path']), 'r', encoding='utf-8') as fr:
             try:
                 departures_data = json.load(fr)
             except json.JSONDecodeError:
@@ -213,9 +196,44 @@ def process_departures(region):
     else:
         departures_data = []
 
-    for departure in departures_data:
-        departure_data, address_data, units_data = format_departure_data(departure, region)
-        store_in_mongodb(departure_data, address_data, units_data)
+    if os.path.exists('departures.json'):
+        os.remove('departures.json')
+    if os.path.exists('addresses.json'):
+        os.remove('addresses.json')
+    if os.path.exists('units.json'):
+        os.remove('units.json')
+
+    with open('departures.json', 'w', encoding='utf-8') as fw_dep, \
+            open('addresses.json', 'w', encoding='utf-8') as fw_addr, \
+            open('units.json', 'w', encoding='utf-8') as fw_units:
+
+        wrote_to_units = False
+        fw_dep.write('[')
+        fw_addr.write('[')
+        fw_units.write('[')
+
+        for i, departure in enumerate(departures_data):
+            departure_data, address_data, units_data = format_departure_data(departure, region)
+
+            if i != 0:
+                fw_dep.write(',')
+                fw_addr.write(',')
+
+            json.dump(departure_data, fw_dep, ensure_ascii=False)
+            json.dump(address_data, fw_addr, ensure_ascii=False)
+            if len(units_data) > 0:
+                if wrote_to_units:
+                    fw_units.write(',')
+                wrote_to_units = True
+
+                for index, obj in enumerate(units_data):
+                    fw_units.write(json.dumps(obj, ensure_ascii=False))
+                    if index < len(units_data) - 1:
+                        fw_units.write(",")
+
+        fw_dep.write(']')
+        fw_addr.write(']')
+        fw_units.write(']')
 
 
 if __name__ == "__main__":
@@ -272,13 +290,14 @@ if __name__ == "__main__":
     mongo_password = os.getenv('ROOT_PASSWORD')
 
     mongo_url = f'mongodb://{mongo_user}:{mongo_password}@{mongo_ip}:{mongo_port1},{mongo_ip}:{mongo_port2}/{mongo_database}?authSource=admin'
+    pwd = os.path.dirname(os.path.abspath(__file__))
 
     # Ignore certificates because some APIs don't have a valid one
     context = ssl._create_unverified_context()
 
     print('Checking API availability...')
     for region in sources:
-        if os.path.exists(region['raw_file_path']):
+        if os.path.exists(os.path.join(pwd, region['raw_file_path'])):
             print(f'Skipping {region["region"]} because the data are already present')
             region['available'] = False
             continue
@@ -299,10 +318,10 @@ if __name__ == "__main__":
             print(f"Fetching units from {region['region']}...")
             fetch_units(region)
 
-    print('Formatting data and pushing to database...')
+    print('Formatting data...')
     for region in sources:
         if region['available']:
-            print(f"Pushing data from {region['region']}...")
+            print(f"Formatting data from {region['region']}...")
             process_departures(region)
 
     print('Done.')

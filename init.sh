@@ -10,3 +10,7 @@ docker-compose up -d
 # Setup cluster
 chmod +x init-cluster.sh
 ./init-cluster.sh
+
+# Init and import data
+chmod +x init-data.sh
+./init-data.sh

@@ -8,6 +8,7 @@ services:
       - ${ROUTER_01_PORT}:27017
     volumes:
       - ./scripts:/scripts
+      - ./init-data:/init-data
       - ./keyfile:/etc/mongo-keyfile
       - nosql_mongodb_router_01_db:/data/db
       - nosql_mongodb_router_01_config:/data/configdb
@@ -24,6 +25,7 @@ services:
       - ${ROUTER_02_PORT}:27017
     volumes:
       - ./scripts:/scripts
+      - ./init-data:/init-data
       - ./keyfile:/etc/mongo-keyfile
       - nosql_mongodb_router_02_db:/data/db
       - nosql_mongodb_router_02_config:/data/configdb
