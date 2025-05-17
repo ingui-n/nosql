@@ -1,6 +1,7 @@
 import urllib.request
 import json
 import os
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timedelta
 import ssl
 from pymongo import MongoClient
@@ -56,6 +57,23 @@ def fetch_region(region):
 
 
 def fetch_units(region):
+    def fetch_departure_units(departure):
+        """
+        Function to fetch units data for a single departure.
+        Returns a tuple of (departure_id, units_json) for updating the original data.
+        """
+        try:
+            url = f'{region['url']}/api/udalosti/{departure['id']}/technika'
+            with urllib.request.urlopen(url, context=context) as response:
+                units_data = response.read().decode('utf-8')
+                units_json = json.loads(units_data)
+                if not isinstance(units_json, list):
+                    units_json = [units_json]
+            return (departure['id'], units_json)
+        except Exception as e:
+            print(f"Error fetching data for departure {departure['id']}: {e}")
+            return (departure['id'], [])
+
     try:
         if os.path.exists(region['raw_file_path']):
             with open(region['raw_file_path'], 'r', encoding='utf-8') as fr:
@@ -66,19 +84,38 @@ def fetch_units(region):
         else:
             departures_data = []
 
-        for departure in departures_data:
-            print('Fetching units of:', region['url'] + f'/api/udalosti/{departure['id']}/technika')
-            with urllib.request.urlopen(
-                    region['url'] + f'/api/udalosti/{departure['id']}/technika',
-                    context=context
-            ) as response:
-                units_data = response.read().decode('utf-8')
-                units_json = json.loads(units_data)
+        if len(departures_data) > 0 and departures_data[0].get('sent_units') is not None:
+            print(f'Skipping fetching units for {region["region"]} because they are already present')
+            return departures_data
 
-                if not isinstance(units_json, list):
-                    units_json = [units_json]
+        max_workers = 20
+        total_departures = len(departures_data)
+        print(f"Starting to fetch data for {total_departures} departures with {max_workers} concurrent requests...")
 
-                departure['sent_units'] = units_json
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            # Submit all tasks and store futures with their index for progress tracking
+            futures = {executor.submit(fetch_departure_units, departure): i
+                       for i, departure in enumerate(departures_data)
+                       }
+
+            # Process results as they complete
+            completed_count = 0
+            for future in as_completed(futures):
+                idx = futures[future]
+                completed_count += 1
+                try:
+                    departure_id, units_json = future.result()
+                    # Update the original departures_data with the fetched units
+                    for departure in departures_data:
+                        if departure['id'] == departure_id:
+                            departure['sent_units'] = units_json
+                            break
+                    print(
+                        f"Fetched units {completed_count}/{total_departures} from region: {region['region']}",
+                        f'{region['url']}/api/udalosti/{departure_id}/technika'
+                    )
+                except Exception as e:
+                    print(f"Error processing departure at index {idx}: {e}")
 
         with open(region['raw_file_path'], 'w', encoding='utf-8') as fw:
             json.dump(departures_data, fw, indent=2, ensure_ascii=False)
@@ -106,7 +143,7 @@ def remove_file(file_path):
 def format_departure_data(departure, region):
     departure_data = {
         "departure_id": departure["id"],
-        "reportedDateTime": departure["casOhlaseni"],
+        "reportedDateTime": datetime.fromisoformat(departure["casOhlaseni"].replace('Z', '+00:00')),
         "startDateTime": departure["casVzniku"],
         "stateId": departure["stavId"],
         "typeId": departure["typId"],
@@ -159,7 +196,8 @@ def store_in_mongodb(departure_data, address_data, sent_units_data):
     if not departures_collection.find_one({"departure_id": departure_data["departure_id"]}):
         departures_collection.insert_one(departure_data)
         addresses_collection.insert_one(address_data)
-        sent_units_collection.insert_many(sent_units_data)
+        if len(sent_units_data) > 0:
+            sent_units_collection.insert_many(sent_units_data)
         print(f"Inserted departure {departure_data['departure_id']}")
     else:
         print(f"Departure {departure_data['departure_id']} already exists")
@@ -233,20 +271,21 @@ if __name__ == "__main__":
     mongo_user = os.getenv('ROOT_USERNAME')
     mongo_password = os.getenv('ROOT_PASSWORD')
 
-    mongo_url = f'mongodb+srv://{mongo_user}:{mongo_password}@{mongo_ip}:{mongo_port1},{mongo_ip}:{mongo_port2}/{mongo_database}?retryWrites=true&w=majority'
-    # &directConnection=true&serverSelectionTimeoutMS=2000&appName=mongosh+2.5.0
-    # mongodb+srv://<username>:<password>@cluster0.<hash>.mongodb.net/fire_departures_db?retryWrites=true&w=majority
+    mongo_url = f'mongodb://{mongo_user}:{mongo_password}@{mongo_ip}:{mongo_port1},{mongo_ip}:{mongo_port2}/{mongo_database}?authSource=admin'
+
     # Ignore certificates because some APIs don't have a valid one
     context = ssl._create_unverified_context()
 
     print('Checking API availability...')
     for region in sources:
-        region['available'] = check_api_availability(region)
+        if os.path.exists(region['raw_file_path']):
+            print(f'Skipping {region["region"]} because the data are already present')
+            region['available'] = False
+            continue
+        else:
+            region['available'] = check_api_availability(region)
         if not region['available']:
             print(f"Region {region['region']} is unavailable.")
-        else:
-            print(f'Removing old data from {region["region"]}...')
-            remove_file(region['raw_file_path'])
 
     print('Fetching data...')
     for region in sources:
