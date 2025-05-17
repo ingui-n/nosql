@@ -1,8 +1,12 @@
 #!/bin/bash
 
-mkdir -p keyfile
+# Init keyfile
+chmod +x init-keyfile.sh
+sudo ./init-keyfile.sh
 
-# Generates random base64 key to keyfile/keyfile
-openssl rand -base64 756 > keyfile/keyfile
-chmod 600 keyfile/keyfile
-chown 999:999 keyfile/keyfile
+# Start docker compose
+docker-compose up -d
+
+# Setup cluster
+chmod +x init-cluster.sh
+./init-cluster.sh

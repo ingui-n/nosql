@@ -67,8 +67,8 @@ db.createCollection("addresses", {
         municipalityPart: {bsonType: ["string", "null"]},
         municipalityWithExtendedCompetence: {bsonType: ["string", "null"]},
         street: {bsonType: ["string", "null"]},
-        gis1: {bsonType: "string"},
-        gis2: {bsonType: "string"},
+        gis1: {bsonType: ["string", "null"]},
+        gis2: {bsonType: ["string", "null"]},
         zoc: {bsonType: "bool"},
         road: {bsonType: ["string", "null"]}
       }

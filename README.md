@@ -6,27 +6,46 @@ _More like no sequel_
 
 MongoDB cluster with key file authentification.
 
-## Setup
-
-Run `init.sh` to initialize key file authentification
+## Run
 
 ```shell
 chmod +x init.sh && sudo ./init.sh
 ```
 
-## Run
+[//]: # (## Setup)
 
-To run the mongo cluster, run this command
+[//]: # ()
+[//]: # (Run `init.sh` to initialize key file authentification)
 
-```shell
-docker-compose up -d
-```
+[//]: # ()
+[//]: # (```shell)
 
-## Setup cluster
+[//]: # (chmod +x init-keyfile.sh && sudo ./init-keyfile.sh)
 
-```shell
-chmod +x setup-cluster.sh && sudo ./setup-cluster.sh
-```
+[//]: # (```)
+
+[//]: # ()
+[//]: # (## Run)
+
+[//]: # ()
+[//]: # (To run the mongo cluster, run this command)
+
+[//]: # ()
+[//]: # (```shell)
+
+[//]: # (docker-compose up -d)
+
+[//]: # (```)
+
+[//]: # ()
+[//]: # (## Setup cluster)
+
+[//]: # ()
+[//]: # (```shell)
+
+[//]: # (chmod +x init-cluster.sh && ./init-cluster.sh)
+
+[//]: # (```)
 
 ## Notes
 
