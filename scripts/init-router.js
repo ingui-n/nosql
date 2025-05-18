@@ -96,8 +96,9 @@ console.log('init-router:', `Creating indexes...`);
 db.departures.createIndex({"departure_id": 1}, {unique: true});
 db.addresses.createIndex({"departure_id": 1}, {unique: true});
 db.sent_units.createIndex({"departure_id": 1});
+db.merged_address_units.createIndex("departure_id", {unique: true});
 
-console.log('init-router:', `Creating indexes...`);
+console.log('init-router:', `Creating shards collections...`);
 sh.shardCollection(process.env.DATABASE_NAME + ".departures", {"departure_id": "hashed"});
 sh.shardCollection(process.env.DATABASE_NAME + ".addresses", {"departure_id": "hashed"});
 sh.shardCollection(process.env.DATABASE_NAME + ".sent_units", {"departure_id": "hashed"});
