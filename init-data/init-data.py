@@ -6,6 +6,214 @@ from datetime import datetime, timedelta, timezone
 import ssl
 from dotenv import load_dotenv
 
+departure_state = {
+    620: "Exportovaná ZOZ Online",
+    520: "Exportovaná do SK",
+    200: "Inicializovaná",
+    440: "Likvidovaná",
+    430: "Lokalizovaná",
+    450: "Odjezd poslední jednotky",
+    300: "Odložená",
+    120: "Odmítnuto",
+    410: "Otevřená SaP na cestě",
+    420: "Otevřená, SaP na místě",
+    400: "Otevřená, bez SaP",
+    780: "Potvrzená krajským garantem",
+    210: "Převzatá",
+    600: "Převzatá VZ",
+    700: "Převzatá ZPP",
+    750: "Převzatá garantem za SSU",
+    800: "Připravená k archivaci",
+    500: "Ukončená OS",
+    610: "Ukončená VZ",
+    710: "Ukončená ZPP",
+    760: "Ukončená garantem za SSU",
+    510: "Uzavřená OS",
+    130: "Zapracováno k řešené události",
+    110: "Čekající - přečteno",
+    100: "Čekající na odbavení"
+}
+
+departure_types = {
+    3100: "Požár",
+    3200: "Dopravní nehoda",
+    3400: "Únik nebezpečných látek",
+    3500: "Technická pomoc",
+    3550: "Záchrana osob a zvířat",
+    3700: "Jiná událost",
+    3600: "Formálně založená událost",
+    3900: "Technologický test",
+    3800: "Planý poplach",
+    5000: "Událost na objekt",
+}
+
+departure_subtypes = {
+    3530: "AED",
+    3542: "Likvidace obtížného hmyzu",
+    3401: "Na pozemní komunikaci",
+    3811: "Planý poplach",
+    3611: "Radiační nehoda, havárie",
+    10001: "Signalizace EPS",
+    3211: "Vyproštění osob",
+    3602: "Živelní pohroma",
+    3402: "Do půdy",
+    3711: "Evakuace a ochrana obyvatel plošná",
+    3603: "Humanitární pomoc",
+    3101: "Nízké budovy",
+    3505: "Odstranění stromu",
+    3214: "Se zraněním",
+    3921: "Technologický test",
+    3543: "Transport pacienta",
+    3712: "Jiné",
+    3403: "Na (do) vodní plochu(y)",
+    3526: "Odstraňování překážek",
+    3601: "Ostatní formálně založená událost",
+    3212: "Uvolnění komunikace, odtažení",
+    3523: "Uzavřené prostory, výtah",
+    3102: "Výškové budovy",
+    3931: "Zlomyslné volání",
+    3404: "Do ovzduší",
+    3713: "Informace pro dopravu",
+    3501: "Odstranění nebezpečných stavů",
+    3117: "Sazí v komíně",
+    3522: "Z výšky",
+    3213: "Úklid vozovky",
+    3108: "Dopravní prostředky",
+    3525: "Otevření uzavřených prostor",
+    3215: "Prostředek hromadné přepravy osob",
+    3529: "Z hloubky",
+    3241: "Letecká",
+    3231: "Železniční",
+    3103: "Průmyslové, zemědělské objekty, sklady",
+    3521: "Z vody",
+    3106: "Polní porost, tráva",
+    3502: "Spolupráce se složkami IZS",
+    3531: "Z terénu",
+    3110: "Lesní porost",
+    3524: "Zasypané,zavalené",
+    3527: "Čerpání vody",
+    3504: "Náhrada nefunkčního zařízení",
+    3109: "Popelnice, kontejner",
+    3533: "Žádost zdravotnického zařízení",
+    3503: "Destrukce objektu",
+    3111: "Odpad, ostatní",
+    3112: "Kůlny, přístřešky",
+    3528: "Měření koncentrací",
+    3541: "Monitoring",
+    3107: "Trafostanice, rozvodny",
+    3113: "Skládka",
+    3114: "Chemický průmysl",
+    3115: "Nemocnice, LDN, domovy důchodců",
+    3105: "Podzemní prostory, tunely",
+    3104: "Shromaždiště osob",
+    3116: "Kabelové kanály, kolektory",
+    10082: "Covid-19",
+    10092: "Letecká nehoda",
+    11001: "Na stanici Nošovice",
+    10012: "Plná pohotovost",
+    11002: "Na vlastní zbrojnici",
+    5011: "Neakutní otevření uzavřených prostor",
+    5007: "Podzemní prostory",
+    11003: "Mimo vlastní zbrojnici",
+    9999: "Místní pohotovost k Sdl",
+    10080: "Předáno ostatní složce nebo pohotovostní službě",
+    5004: "Únik provozních kapalin",
+    10077: "Vrtulník",
+    10054: "Zemědělské objekty",
+    10013: "Narušení objektu",
+    10078: "Nehoda vozidla HZS",
+    5005: "Signalizace metanového čidla",
+    5012: "Akutní likvidace hmyzu",
+    5006: "Signalizace plynového čidla",
+    10003: "Tunel Klimkovice",
+    10059: "Z vody - velká plocha",
+    10009: "Dálnice",
+    10068: "Tunel Lysůvky",
+    10075: "Záchrana, odchyt zvířat",
+    10064: "Pátrání po pohřešované osobě",
+    10086: "Tunel Prchalov",
+    10018: "Požární asistence - tankování",
+    10090: "Sondy, vrty",
+    10019: "Požární asistence - pož.neb.prac",
+    10060: "Sebevražedný úmysl",
+    10005: "Tunel Klimkovice - bez vyproštění osob",
+    10066: "Tunel Lysůvky - vyproštění osob",
+    10021: "Předlékařská pomoc",
+    5010: "Asistence u sportovních a kulturních akcí",
+    10023: "Prm - asistence Prm",
+    10085: "Tunel Prchalov - bez vyproštění osob",
+    10057: "Uzavření tekoucí vody",
+    10058: "Asistence při hledání Nvz",
+    10008: "Dálnice",
+    10002: "Tunel Klimkovice",
+    10065: "Tunel Lysůvky",
+    10083: "Tunel Prchalov",
+    10089: "Sondy, vrty",
+    10053: "Vysoce nakažlivá nákaza",
+    10069: "Asistence při technologickém postupu",
+    10046: "Požár na PCO",
+    10070: "Čerpání vody",
+    10067: "Planý poplach na PCO",
+    10071: "Čištění kanalizace, silnice",
+    10072: "Dovoz vody do provozů, technologií",
+    10062: "Únik PHM na komunikaci",
+    10074: "Osoby ve výtahu",
+    10081: "Taktické cvičení",
+    10076: "Ověření úsekového poplachu EPS",
+    10045: "Pád dronu",
+    10061: "Osoba v nouzi",
+    10084: "Vozidlo JPO",
+    10079: "Zkouška technologie",
+    10050: "Transport pacienta vozidlem HZS",
+    10004: "Vrtulník LZS - vyzvednutí lezce",
+    10011: "Příprava plochy pro vrtulník LZS",
+    10048: "Amok",
+    10052: "Plyn přípojka"
+}
+
+sources = [
+    {
+        # 65457
+        'region': 'Jihomoravský kraj',
+        'url': 'https://udalosti.firebrno.cz',
+        'raw_file_path': 'raw-data-jihomoravsky.json',
+    },
+    {
+        'region': 'Královéhradecký kraj',
+        'url': 'https://udalostikhk.hzscr.cz',
+        'raw_file_path': 'raw-data-kralovehradecky.json',
+    },
+    {
+        # 26477
+        'region': 'Moravskoslezský kraj',
+        'url': 'http://webohled.hzsmsk.cz',
+        'raw_file_path': 'raw-data-moravskoslezsky.json',
+    },
+    {
+        # 24126
+        'region': 'Plzeňský kraj',
+        'url': 'https://zasahy.hzspk.cz',
+        'raw_file_path': 'raw-data-plzensky.json',
+    },
+    {
+        # 6000
+        'region': 'Ústecký kraj',
+        'url': 'https://udalosti.hzsulk.cz',
+        'raw_file_path': 'raw-data-ustecky.json',
+    },
+    {
+        # 63392
+        'region': 'Vysočina',
+        'url': 'https://webohled.hasici-vysocina.cz/udalosti',
+        'raw_file_path': 'raw-data-vysocina.json',
+    },
+    {
+        'region': 'Zlínský kraj',
+        'url': 'https://webohledzlk.hzscr.cz/udalosti',
+        'raw_file_path': 'raw-data-zlinsky.json',
+    }
+]
+
 
 def fetch_and_merge(api_url, raw_file_path, reverse=False):
     try:
@@ -143,9 +351,9 @@ def format_departure_data(departure, region):
     departure_data = {
         "departure_id": departure["id"],
         "reportedDateTime": {"$date": departure["casOhlaseni"]},
-        "stateId": departure["stavId"],
-        "typeId": departure["typId"],
-        "subTypeId": departure["podtypId"],
+        "state": departure_state[departure["stavId"]],
+        "type": departure_types[departure["typId"]] if departure_types.get(departure["typId"]) else None,
+        "subType": departure_subtypes[departure["podtypId"]] if departure_subtypes.get(departure["podtypId"]) else None,
         "description": departure["poznamkaProMedia"],
         "region_url": region['url'],
     }
@@ -237,49 +445,6 @@ def process_departures(region):
 
 
 if __name__ == "__main__":
-    sources = [
-        {
-            # 65457
-            'region': 'Jihomoravský kraj',
-            'url': 'https://udalosti.firebrno.cz',
-            'raw_file_path': 'raw-data-jihomoravsky.json',
-        },
-        {
-            'region': 'Královéhradecký kraj',
-            'url': 'https://udalostikhk.hzscr.cz',
-            'raw_file_path': 'raw-data-kralovehradecky.json',
-        },
-        {
-            # 26477
-            'region': 'Moravskoslezský kraj',
-            'url': 'http://webohled.hzsmsk.cz',
-            'raw_file_path': 'raw-data-moravskoslezsky.json',
-        },
-        {
-            # 24126
-            'region': 'Plzeňský kraj',
-            'url': 'https://zasahy.hzspk.cz',
-            'raw_file_path': 'raw-data-plzensky.json',
-        },
-        {
-            # 6000
-            'region': 'Ústecký kraj',
-            'url': 'https://udalosti.hzsulk.cz',
-            'raw_file_path': 'raw-data-ustecky.json',
-        },
-        {
-            # 63392
-            'region': 'Vysočina',
-            'url': 'https://webohled.hasici-vysocina.cz/udalosti',
-            'raw_file_path': 'raw-data-vysocina.json',
-        },
-        {
-            'region': 'Zlínský kraj',
-            'url': 'https://webohledzlk.hzscr.cz/udalosti',
-            'raw_file_path': 'raw-data-zlinsky.json',
-        }
-    ]
-
     load_dotenv('../.env')
 
     mongo_ip = 'localhost'
@@ -321,6 +486,7 @@ if __name__ == "__main__":
     print('Formatting data...')
     for region in sources:
         if region['available']:
+        # if region['region'] == 'Jihomoravský kraj':
             print(f"Formatting data from {region['region']}...")
             process_departures(region)
 

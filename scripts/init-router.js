@@ -25,13 +25,13 @@ db.createCollection("departures", {
   validator: {
     $jsonSchema: {
       bsonType: "object",
-      required: ["departure_id", "reportedDateTime", "stateId", "typeId", "subTypeId"],
+      required: ["departure_id", "reportedDateTime", "state"],
       properties: {
         departure_id: {bsonType: "int"},
         reportedDateTime: {bsonType: "date"},
-        stateId: {bsonType: "int"},
-        typeId: {bsonType: "int"},
-        subTypeId: {bsonType: "int"},
+        state: {bsonType: "string"},
+        type: {bsonType: ["string", "null"]},
+        subType: {bsonType: ["string", "null"]},
         description: {bsonType: ["string", "null"]},
         region_url: {bsonType: ["string", "null"]}
       }
@@ -94,7 +94,7 @@ db.createCollection("sent_units", {
 
 console.log('init-router:', `Creating indexes...`);
 db.departures.createIndex({"departure_id": 1}, {unique: true});
-db.addresses.createIndex({"departure_id": 1});
+db.addresses.createIndex({"departure_id": 1}, {unique: true});
 db.sent_units.createIndex({"departure_id": 1});
 
 console.log('init-router:', `Creating indexes...`);

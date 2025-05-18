@@ -1,4 +1,20 @@
 services:
+  jupyter:
+    image: jupyter/base-notebook:latest
+    container_name: nosql-jupyter
+    restart: always
+    ports:
+      - ${JUPYTER_PORT}:8888
+    volumes:
+      - ./visualization:/home/jovyan/visualization
+    command: start-notebook.sh --NotebookApp.token=dev
+    env_file: .env
+    networks:
+      - bridge_network
+    depends_on:
+      - nosql-router-01
+      - nosql-router-02
+
   ## Routers
   nosql-router-01:
     image: ${MONGO_IMAGE}
