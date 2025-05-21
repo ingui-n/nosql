@@ -21,47 +21,37 @@ git clone https://github.com/ingui-n/nosql
 chmod +x init.sh && sudo ./init.sh
 ```
 
-[//]: # (## Setup)
+## Simulace výpadku uzlu/nodu
 
-[//]: # ()
+Zastavení kontejneru např. `nosql-shard-01-node-01`
 
-[//]: # (Run `init.sh` to initialize key file authentification)
+```shell
+docker stop nosql-shard-01-node-01
+```
 
-[//]: # ()
+Připojení se do jednoho z uzlů shardu
 
-[//]: # (```shell)
+```shell
+docker-compose exec nosql-shard-01-node-02 bash
+```
 
-[//]: # (chmod +x init-keyfile.sh && sudo ./init-keyfile.sh)
+Přihlášení do `mongosh`
 
-[//]: # (```)
+```shell
+mongosh -u root -p pass --authenticationDatabase admin
+```
 
-[//]: # ()
+Zobrazení statusu replika setu
 
-[//]: # (## Run)
+```javascript
+rs.status()
+```
 
-[//]: # ()
+Spuštění uzlu 
 
-[//]: # (To run the mongo cluster, run this command)
-
-[//]: # ()
-
-[//]: # (```shell)
-
-[//]: # (docker-compose up -d)
-
-[//]: # (```)
-
-[//]: # ()
-
-[//]: # (## Setup cluster)
-
-[//]: # ()
-
-[//]: # (```shell)
-
-[//]: # (chmod +x init-cluster.sh && ./init-cluster.sh)
-
-[//]: # (```)
+```shell
+docker start nosql-shard-01-node-01
+```
 
 ## Notes
 
